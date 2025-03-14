@@ -4,7 +4,6 @@ import {
 } from '@mui/material';
 import { Contacts, Assignment } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import CouveFlorIcon from '../image/couve.png'; // Ajuste o caminho conforme sua estrutura
 
 const drawerWidth = 240;
 
@@ -38,14 +37,6 @@ const Sidebar = ({ onSelect, selectedPage }) => {
       {/* Cabeçalho da Sidebar */}
       <DrawerHeader>
         <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
-          {/* Ícone importado da pasta images */}
-          <img
-            src={CouveFlorIcon}
-            alt="Couve-flor"
-            width="48"
-            height="48"
-            style={{ marginRight: '16px' }}
-          />
           <Typography
             variant="h6"
             sx={{ fontWeight: 'bold' }}

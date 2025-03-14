@@ -4,6 +4,7 @@ import {
 } from '@mui/material';
 import { Contacts, Assignment } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import CouveFlorIcon from '../image/couve.png'; // Ajuste o caminho conforme sua estrutura
 
 const drawerWidth = 240;
 
@@ -36,12 +37,22 @@ const Sidebar = ({ onSelect, selectedPage }) => {
     >
       {/* Cabeçalho da Sidebar */}
       <DrawerHeader>
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: 'bold', ml: 2 }}
-        >
-          Menu
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+          {/* Ícone importado da pasta images */}
+          <img
+            src={CouveFlorIcon}
+            alt="Couve-flor"
+            width="48"
+            height="48"
+            style={{ marginRight: '16px' }}
+          />
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 'bold' }}
+          >
+            Couve-flor
+          </Typography>
+        </Box>
       </DrawerHeader>
 
       {/* Lista de Itens */}
@@ -59,10 +70,10 @@ const Sidebar = ({ onSelect, selectedPage }) => {
                 '& .MuiListItemIcon-root': { color: '#fff' },
               },
               ...(selectedPage === 'distribute' && {
-                boxShadow: '0px 4px 12px rgba(255, 98, 0, 0.5)', // Sombra laranja quando selecionado
-                backgroundColor: '#FF6200', // Fundo laranja
-                color: '#fff', // Texto branco
-                '& .MuiListItemIcon-root': { color: '#fff' }, // Ícone branco
+                boxShadow: '0px 4px 12px rgba(255, 98, 0, 0.5)',
+                backgroundColor: '#FF6200',
+                color: '#fff',
+                '& .MuiListItemIcon-root': { color: '#fff' },
               }),
             }}
           >
@@ -85,10 +96,10 @@ const Sidebar = ({ onSelect, selectedPage }) => {
                 '& .MuiListItemIcon-root': { color: '#fff' },
               },
               ...(selectedPage === 'register' && {
-                boxShadow: '0px 4px 12px rgba(88, 204, 2, 0.5)', // Sombra verde quando selecionado
-                backgroundColor: '#58CC02', // Fundo verde
-                color: '#fff', // Texto branco
-                '& .MuiListItemIcon-root': { color: '#fff' }, // Ícone branco
+                boxShadow: '0px 4px 12px rgba(88, 204, 2, 0.5)',
+                backgroundColor: '#58CC02',
+                color: '#fff',
+                '& .MuiListItemIcon-root': { color: '#fff' },
               }),
             }}
           >

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, TextField, Button, CircularProgress, Paper, Stack, Chip, Link
+  Box, Typography, TextField, Button, CircularProgress, Paper, Stack, Chip, Link, IconButton, InputAdornment
 } from '@mui/material';
 import { CloudUpload, CheckCircle, PlayArrow, Stop, Visibility, VisibilityOff } from '@mui/icons-material';
 import axios from 'axios';
 import Papa from 'papaparse';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
+import WelcomePopup from './WelcomePopup'; // Importe o novo componente
 
 const ContactDistributor = () => {
   const [csvData, setCsvData] = useState(null);
@@ -19,12 +18,22 @@ const ContactDistributor = () => {
   const [csvUploaded, setCsvUploaded] = useState(false);
   const [loadingCsv, setLoadingCsv] = useState(false);
   const [showToken, setShowToken] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
 
   // Salva as credenciais no localStorage quando mudam
   useEffect(() => {
     localStorage.setItem('token', token);
     localStorage.setItem('customerID', customerID);
   }, [token, customerID]);
+
+  // Verifica se o usuário já acessou a página antes
+  useEffect(() => {
+    const hasVisited = localStorage.getItem('hasVisited');
+    if (!hasVisited) {
+      setShowPopup(true);
+      localStorage.setItem('hasVisited', 'true');
+    }
+  }, []);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -90,6 +99,10 @@ const ContactDistributor = () => {
       contact_id: data.contact_id,
       origin_id: data.origin_id
     };
+  };
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
   };
 
   return (
@@ -280,6 +293,9 @@ const ContactDistributor = () => {
           ))
         )}
       </Paper>
+
+      {/* Popup de Boas-vindas */}
+      <WelcomePopup open={showPopup} onClose={handleClosePopup} />
     </Box>
   );
 };

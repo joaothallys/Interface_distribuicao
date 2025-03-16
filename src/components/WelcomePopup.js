@@ -22,7 +22,7 @@ const WelcomePopup = ({ open, onClose }) => {
             }}
         >
             <DialogTitle sx={{ textAlign: 'center', color: '#1CB0F6', fontWeight: 'bold', fontSize: '1.8rem' }}>
-                Bem-vindo à Couve-flor!
+                Bem-vindo!
             </DialogTitle>
             <DialogContent>
                 <Stack direction="row" spacing={4} alignItems="center" sx={{ mt: 3 }}>
@@ -44,7 +44,7 @@ const WelcomePopup = ({ open, onClose }) => {
                             maxWidth: '550px', // Aumentei para ocupar melhor o espaço
                         }}
                     >
-                        Olá! Eu sou o Couve, seu parceiro verde e divertido para dominar a distribuição de contatos! 🍃📱 Faça upload do seu CSV e me deixe misturar esses contatos na api com de um jeito maluco. Quer começar a redistribuir e importar com estilo? Vamos lá!
+                        Olá! Eu sou o Couve, seu parceiro verde e divertido para dominar a distribuição de contatos! 🍃📱 Faça upload do seu CSV e me deixe misturar esses contatos na api de um jeito maluco. Quer começar a distribuir e importar com estilo? Vamos lá!
                     </Typography>
                 </Stack>
             </DialogContent>

@@ -113,7 +113,7 @@ const RegisterContacts = () => {
         }
       } catch (error) {
         const errorMsg = error.response?.data?.message || error.message || 'Erro na requisição';
-        if (error.response?.status === 403 && errorMsg === "Contato ja existe nessa empresa.") {
+        if (error.response?.status === 403 && errorMsg === "Contato j\u00e1 existe nessa empresa.") {
           // Trata erro 403 como "já existente"
           setExistingCount(prevCount => prevCount + 1);
           results.push({

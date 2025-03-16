@@ -41,7 +41,7 @@ const Sidebar = ({ onSelect, selectedPage }) => {
             variant="h6"
             sx={{ fontWeight: 'bold' }}
           >
-            Couve-flor
+            Couve
           </Typography>
         </Box>
       </DrawerHeader>

@@ -3,7 +3,8 @@ import {
   Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Box
 } from '@mui/material';
 import { Contacts, Assignment } from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 
 const drawerWidth = 240;
 
@@ -28,13 +29,14 @@ const StyledDrawer = styled(Drawer)(({ theme }) => ({
   },
 }));
 
-const Sidebar = ({ onSelect, selectedPage }) => {
+const Sidebar = ({ selectedPage }) => {
+  const navigate = useNavigate();
+
   return (
     <StyledDrawer
       variant="permanent"
       anchor="left"
     >
-      {/* Cabeçalho da Sidebar */}
       <DrawerHeader>
         <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
           <Typography
@@ -46,12 +48,11 @@ const Sidebar = ({ onSelect, selectedPage }) => {
         </Box>
       </DrawerHeader>
 
-      {/* Lista de Itens */}
       <Box sx={{ p: 1 }}>
         <List>
           <ListItem
             button
-            onClick={() => onSelect('distribute')}
+            onClick={() => navigate('/contact-distributor')}
             sx={{
               borderRadius: '15px',
               mb: 1,
@@ -66,9 +67,14 @@ const Sidebar = ({ onSelect, selectedPage }) => {
                 color: '#fff',
                 '& .MuiListItemIcon-root': { color: '#fff' },
               }),
+              ...(selectedPage !== 'distribute' && {
+                backgroundColor: 'transparent',
+                color: '#000',
+                '& .MuiListItemIcon-root': { color: '#FF6200' },
+              }),
             }}
           >
-            <ListItemIcon sx={{ color: '#FF6200' }}>
+            <ListItemIcon sx={{ color: selectedPage === 'distribute' ? '#fff' : '#FF6200' }}>
               <Assignment />
             </ListItemIcon>
             <ListItemText
@@ -78,7 +84,7 @@ const Sidebar = ({ onSelect, selectedPage }) => {
           </ListItem>
           <ListItem
             button
-            onClick={() => onSelect('register')}
+            onClick={() => navigate('/register-contacts')}
             sx={{
               borderRadius: '15px',
               '&:hover': {
@@ -92,9 +98,14 @@ const Sidebar = ({ onSelect, selectedPage }) => {
                 color: '#fff',
                 '& .MuiListItemIcon-root': { color: '#fff' },
               }),
+              ...(selectedPage !== 'register' && {
+                backgroundColor: 'transparent',
+                color: '#000',
+                '& .MuiListItemIcon-root': { color: '#58CC02' },
+              }),
             }}
           >
-            <ListItemIcon sx={{ color: '#58CC02' }}>
+            <ListItemIcon sx={{ color: selectedPage === 'register' ? '#fff' : '#58CC02' }}>
               <Contacts />
             </ListItemIcon>
             <ListItemText

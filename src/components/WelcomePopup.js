@@ -15,9 +15,9 @@ const WelcomePopup = ({ open, onClose }) => {
                     borderRadius: '20px',
                     background: 'linear-gradient(135deg, #ffffff 0%, #e0f7fa 100%)',
                     boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.2)',
-                    width: '1000px', // Aumentado para 1000px
-                    height: '600px', // Aumentado para 600px
-                    p: 4, // Aumentei o padding para melhor espaçamento interno
+                    width: '1000px',
+                    height: '600px',
+                    p: 4,
                 },
             }}
         >

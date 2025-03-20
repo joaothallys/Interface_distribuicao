@@ -21,6 +21,9 @@ const RegisterContacts = () => {
   const [resultData, setResultData] = useState([]);
   const [interrupted, setInterrupted] = useState(false);
   const [addDDD, setAddDDD] = useState(false);
+  const [processedCount, setProcessedCount] = useState(0);
+  const [estimatedTime, setEstimatedTime] = useState(null);
+  const [avgRequestTime, setAvgRequestTime] = useState(0);
 
   useEffect(() => {
     localStorage.setItem('token', token);
@@ -55,8 +58,14 @@ const RegisterContacts = () => {
     setLogs([]);
     setResultData([]);
     setInterrupted(false);
+    setProcessedCount(0);
+    setEstimatedTime(null);
+    setAvgRequestTime(0);
 
     const results = [];
+    const totalContacts = csvData.length;
+    let totalTime = 0;
+    let requestCount = 0;
 
     for (const row of csvData) {
       if (interrupted) {
@@ -66,17 +75,36 @@ const RegisterContacts = () => {
 
       const phoneWithDDD = addDDD && row.phone ? `55${row.phone}` : row.phone || '';
       const url = `${process.env.REACT_APP_API_HOST}/api/v1/customers/${customerID}/contacts`;
+      const startTime = performance.now();
+
       try {
-        const response = await axios.post(url, {
-          phone: phoneWithDDD,
-          email: row.email,
-          name: row.name
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await axios.post(
+          url,
+          {
+            phone: phoneWithDDD,
+            email: row.email,
+            name: row.name,
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const endTime = performance.now();
+        const requestTime = (endTime - startTime) / 1000;
+        totalTime += requestTime;
+        requestCount += 1;
+
+        const newAvgTime = totalTime / requestCount;
+        setAvgRequestTime(newAvgTime);
+        setProcessedCount(prevCount => prevCount + 1);
+
+        const remainingContacts = totalContacts - requestCount;
+        const estimatedSeconds = remainingContacts * newAvgTime;
+        setEstimatedTime(estimatedSeconds);
 
         if (response.status === 200 || response.status === 201) {
-          if (response.data.message === "Contato salvo com sucesso.") {
+          if (response.data.message === 'Contato salvo com sucesso.') {
             if (response.data.data.already_exists) {
               setExistingCount(prevCount => prevCount + 1);
               results.push({
@@ -84,7 +112,7 @@ const RegisterContacts = () => {
                 email: row.email || '',
                 phone: phoneWithDDD,
                 status: 'Ja existente',
-                errorMessage: ''
+                errorMessage: '',
               });
               setLogs(prevLogs => [...prevLogs, `Contato ${row.name} ja existente.`]);
             } else {
@@ -94,45 +122,44 @@ const RegisterContacts = () => {
                 email: row.email || '',
                 phone: phoneWithDDD,
                 status: 'Sucesso',
-                errorMessage: ''
+                errorMessage: '',
               });
               setLogs(prevLogs => [...prevLogs, `Contato ${row.name} cadastrado com sucesso!`]);
             }
           }
-        } else {
-          setErrorCount(prevCount => prevCount + 1);
-          const errorMsg = response.data.message || 'Erro desconhecido';
-          results.push({
-            name: row.name,
-            email: row.email || '',
-            phone: phoneWithDDD,
-            status: 'Erro',
-            errorMessage: errorMsg
-          });
-          setLogs(prevLogs => [...prevLogs, `Erro ao cadastrar contato ${row.name}: ${errorMsg}`]);
         }
       } catch (error) {
+        const endTime = performance.now();
+        const requestTime = (endTime - startTime) / 1000;
+        totalTime += requestTime;
+        requestCount += 1;
+
+        setAvgRequestTime(totalTime / requestCount);
+        setProcessedCount(prevCount => prevCount + 1);
+
+        const remainingContacts = totalContacts - requestCount;
+        const estimatedSeconds = remainingContacts * (totalTime / requestCount);
+        setEstimatedTime(estimatedSeconds);
+
         const errorMsg = error.response?.data?.message || error.message || 'Erro na requisição';
-        if (error.response?.status === 403 && errorMsg === "Contato j\u00e1 existe nessa empresa.") {
-          // Trata erro 403 como "já existente"
+        if (error.response?.status === 403 && errorMsg === 'Contato j\u00e1 existe nessa empresa.') {
           setExistingCount(prevCount => prevCount + 1);
           results.push({
             name: row.name,
             email: row.email || '',
             phone: phoneWithDDD,
             status: 'Ja existente',
-            errorMessage: ''
+            errorMessage: '',
           });
           setLogs(prevLogs => [...prevLogs, `Contato ${row.name} ja existente nessa empresa.`]);
         } else {
-          // Outros erros continuam como "Erro"
           setErrorCount(prevCount => prevCount + 1);
           results.push({
             name: row.name,
             email: row.email || '',
             phone: phoneWithDDD,
             status: 'Erro',
-            errorMessage: errorMsg
+            errorMessage: errorMsg,
           });
           setLogs(prevLogs => [...prevLogs, `Erro ao cadastrar contato ${row.name}: ${errorMsg}`]);
         }
@@ -141,6 +168,13 @@ const RegisterContacts = () => {
 
     setResultData(results);
     setLoading(false);
+  };
+
+  const formatEstimatedTime = (seconds) => {
+    if (!seconds || seconds <= 0) return 'Calculando...';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes} min ${remainingSeconds} seg`;
   };
 
   const handleInterrupt = () => {
@@ -198,7 +232,7 @@ const RegisterContacts = () => {
       sx={{
         width: '100%',
         minHeight: '100vh',
-        p: 4,
+        p: { xs: 2, sm: 4 }, // Ajuste de padding para telas menores
         backgroundColor: '#fff',
         display: 'flex',
         flexDirection: 'column',
@@ -213,16 +247,17 @@ const RegisterContacts = () => {
           color: '#1CB0F6',
           textAlign: 'left',
           mb: 2,
+          fontSize: { xs: '1.5rem', sm: '2.125rem' }, // Reduz tamanho em telas pequenas
         }}
       >
-        Cadastrar Contatos
+        Cadastrar Contatos 🚀
       </Typography>
 
       {/* Seção de Inputs */}
       <Paper
         elevation={3}
         sx={{
-          p: 4,
+          p: { xs: 2, sm: 4 }, // Padding responsivo
           borderRadius: '20px',
           backgroundColor: '#fff',
           border: '2px solid #58CC02',
@@ -232,7 +267,7 @@ const RegisterContacts = () => {
         <Stack spacing={3}>
           <TextField
             fullWidth
-            label="Token"
+            label="Token Secreto"
             variant="outlined"
             type={showToken ? 'text' : 'password'}
             value={token}
@@ -254,7 +289,7 @@ const RegisterContacts = () => {
           />
           <TextField
             fullWidth
-            label="Customer ID"
+            label="ID do Cliente"
             variant="outlined"
             value={customerID}
             onChange={(e) => setCustomerID(e.target.value)}
@@ -265,9 +300,9 @@ const RegisterContacts = () => {
           <Link
             href="https://docs.google.com/spreadsheets/d/1172gOd-Pz8S7Sqml2tO_p_ZSZE1RSs5GMj_PP1yOlj8/edit?usp=sharing"
             target="_blank"
-            sx={{ color: '#1CB0F6', fontWeight: 'bold' }}
+            sx={{ color: '#1CB0F6', fontWeight: 'bold', wordBreak: 'break-word' }}
           >
-            Ver modelo de planilha
+            Pegue o modelo da planilha aqui! 📝
           </Link>
 
           {/* Chave para adicionar DDD */}
@@ -284,7 +319,7 @@ const RegisterContacts = () => {
           />
 
           {/* Upload CSV */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <Button
               variant="contained"
               component="label"
@@ -297,7 +332,7 @@ const RegisterContacts = () => {
                 '&:hover': { backgroundColor: '#e55a00' },
               }}
             >
-              {csvUploaded ? 'Trocar CSV' : 'Upload CSV'}
+              {csvUploaded ? 'Trocar CSV' : 'Subir CSV'}
               <input
                 type="file"
                 accept=".csv"
@@ -310,7 +345,7 @@ const RegisterContacts = () => {
               <>
                 <Chip
                   icon={<CheckCircle />}
-                  label="CSV Carregado!"
+                  label="CSV Pronto!"
                   color="success"
                   sx={{ borderRadius: '16px' }}
                 />
@@ -325,20 +360,22 @@ const RegisterContacts = () => {
                     setExistingCount(0);
                     setErrorCount(0);
                     setResultData([]);
+                    setProcessedCount(0);
+                    setEstimatedTime(null);
                   }}
                   sx={{
                     borderRadius: '25px',
                     padding: '10px 20px',
                   }}
                 >
-                  Remover CSV
+                  Limpar CSV
                 </Button>
               </>
             )}
           </Box>
 
           {/* Botão de Cadastro e Interromper */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <Button
               variant="contained"
               onClick={handleRegisterContacts}
@@ -352,7 +389,7 @@ const RegisterContacts = () => {
                 '&:hover': { backgroundColor: '#4ab002' },
               }}
             >
-              Cadastrar Contatos
+              Vamos Cadastrar! 🎉
             </Button>
             <Button
               variant="contained"
@@ -367,7 +404,7 @@ const RegisterContacts = () => {
                 '&:hover': { backgroundColor: '#d40000' },
               }}
             >
-              Interromper
+              Parar Missão
             </Button>
           </Box>
         </Stack>
@@ -377,51 +414,108 @@ const RegisterContacts = () => {
       <Paper
         elevation={3}
         sx={{
-          p: 4,
+          p: { xs: 2, sm: 4 }, // Padding responsivo
           borderRadius: '20px',
           backgroundColor: '#fff',
           border: '2px solid #1CB0F6',
           width: '100%',
+          overflow: 'hidden', // Evita overflow
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1CB0F6', mb: 2 }}>
-          Resumo
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 'bold',
+            color: '#1CB0F6',
+            mb: 2,
+            fontSize: { xs: '1.25rem', sm: '1.5rem' }, // Ajuste de tamanho
+          }}
+        >
+          Seu Progresso ⭐
         </Typography>
-        <Stack direction="row" spacing={2} justifyContent="space-around">
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }} // Coluna em telas pequenas, linha em telas maiores
+          spacing={2}
+          justifyContent="space-around"
+          alignItems="center"
+          divider={<Divider orientation={{ xs: 'horizontal', sm: 'vertical' }} flexItem />}
+        >
           <Box textAlign="center">
             <Typography variant="h5" sx={{ color: '#58CC02', fontWeight: 'bold' }}>
               {successCount}
             </Typography>
             <Typography variant="body2" sx={{ color: '#777' }}>
-              Cadastrados
+              Vitórias
             </Typography>
           </Box>
-          <Divider orientation="vertical" flexItem />
           <Box textAlign="center">
             <Typography variant="h5" sx={{ color: '#FF6200', fontWeight: 'bold' }}>
               {existingCount}
             </Typography>
             <Typography variant="body2" sx={{ color: '#777' }}>
-              Já existentes
+              Já Conhecidos
             </Typography>
           </Box>
-          <Divider orientation="vertical" flexItem />
           <Box textAlign="center">
             <Typography variant="h5" sx={{ color: '#FF0000', fontWeight: 'bold' }}>
               {errorCount}
             </Typography>
             <Typography variant="body2" sx={{ color: '#777' }}>
-              Erros
+              Desafios
             </Typography>
           </Box>
         </Stack>
+
+        {/* Progresso e estimativa */}
+        {loading && csvData && (
+          <Box
+            sx={{
+              mt: 2,
+              textAlign: 'center',
+              maxWidth: '100%',
+              wordWrap: 'break-word', // Quebra de linha para evitar corte
+            }}
+          >
+            <Typography
+              variant="body1"
+              sx={{
+                color: '#1CB0F6',
+                fontWeight: 'bold',
+                fontSize: { xs: '0.9rem', sm: '1rem' }, // Ajuste de tamanho
+              }}
+            >
+              Missão: {processedCount} / {csvData.length} contatos
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: '#777',
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+              }}
+            >
+              Tempo para a vitória: {formatEstimatedTime(estimatedTime)}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: '#58CC02',
+                mt: 1,
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+              }}
+            >
+              {processedCount === csvData.length / 2
+                ? "Metade do caminho! Você está arrasando! 💪"
+                : "Continue assim, você vai dominar essa lista! 🔥"}
+            </Typography>
+          </Box>
+        )}
       </Paper>
 
       {/* Seção de Logs com barras de rolagem */}
       <Paper
         elevation={3}
         sx={{
-          p: 4,
+          p: { xs: 2, sm: 4 }, // Padding responsivo
           borderRadius: '20px',
           backgroundColor: '#fff',
           border: '2px solid #FF6200',
@@ -429,12 +523,28 @@ const RegisterContacts = () => {
           maxHeight: '400px',
           overflowX: 'auto',
           overflowY: 'auto',
-          whiteSpace: 'nowrap',
+          whiteSpace: { xs: 'normal', sm: 'nowrap' }, // Normal em telas pequenas para evitar corte
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#FF6200' }}>
-            Logs
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 2,
+            flexWrap: 'wrap', // Permite quebra em telas pequenas
+            gap: 1,
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 'bold',
+              color: '#FF6200',
+              fontSize: { xs: '1.25rem', sm: '1.5rem' },
+            }}
+          >
+            Diário da Missão 📜
           </Typography>
           <Button
             variant="outlined"
@@ -448,12 +558,19 @@ const RegisterContacts = () => {
               '&:hover': { borderColor: '#e55a00', color: '#e55a00' },
             }}
           >
-            Baixar Resultados
+            Baixar Relatório
           </Button>
         </Box>
         {logs.length === 0 ? (
-          <Typography variant="body2" sx={{ color: '#777', textAlign: 'center' }}>
-            Nenhum log disponível ainda.
+          <Typography
+            variant="body2"
+            sx={{
+              color: '#777',
+              textAlign: 'center',
+              fontSize: { xs: '0.8rem', sm: '0.875rem' },
+            }}
+          >
+            Nenhum registro ainda. Vamos começar a aventura? 🌟
           </Typography>
         ) : (
           logs.map((log, index) => (
@@ -463,7 +580,8 @@ const RegisterContacts = () => {
               sx={{
                 color: log.includes('Erro') ? '#FF0000' : '#58CC02',
                 mb: 1,
-                whiteSpace: 'nowrap',
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                wordWrap: 'break-word', // Evita corte em telas pequenas
               }}
             >
               {log}

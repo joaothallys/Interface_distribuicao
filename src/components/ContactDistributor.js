@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, TextField, Button, CircularProgress, Paper, Stack, Chip, Link, IconButton, InputAdornment
+  Box, Typography, TextField, Button, CircularProgress, Paper, Stack, Chip, Link, IconButton, InputAdornment, Divider
 } from '@mui/material';
-import { CloudUpload, CheckCircle, PlayArrow, Stop, Visibility, VisibilityOff } from '@mui/icons-material';
+import { CloudUpload, CheckCircle, PlayArrow, Stop, Visibility, VisibilityOff, Download } from '@mui/icons-material';
 import axios from 'axios';
 import Papa from 'papaparse';
-import WelcomePopup from './WelcomePopup'; // Importe o novo componente
+import WelcomePopup from './WelcomePopup';
 
 const ContactDistributor = () => {
   const [csvData, setCsvData] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem('token') || ''); // Carrega do localStorage
-  const [customerID, setCustomerID] = useState(() => localStorage.getItem('customerID') || ''); // Carrega do localStorage
+  const [token, setToken] = useState(() => localStorage.getItem('token') || '');
+  const [customerID, setCustomerID] = useState(() => localStorage.getItem('customerID') || '');
   const [userIDs, setUserIDs] = useState('');
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -19,14 +19,18 @@ const ContactDistributor = () => {
   const [loadingCsv, setLoadingCsv] = useState(false);
   const [showToken, setShowToken] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [processedCount, setProcessedCount] = useState(0); // Novo: contatos processados
+  const [estimatedTime, setEstimatedTime] = useState(null); // Novo: tempo estimado restante
+  const [avgRequestTime, setAvgRequestTime] = useState(0); // Novo: tempo médio por requisição
+  const [successCount, setSuccessCount] = useState(0); // Novo: contagem de sucessos
+  const [errorCount, setErrorCount] = useState(0); // Novo: contagem de erros
+  const [resultData, setResultData] = useState([]); // Novo: dados para download
 
-  // Salva as credenciais no localStorage quando mudam
   useEffect(() => {
     localStorage.setItem('token', token);
     localStorage.setItem('customerID', customerID);
   }, [token, customerID]);
 
-  // Verifica se o usuário já acessou a página antes
   useEffect(() => {
     const hasVisited = localStorage.getItem('hasVisited');
     if (!hasVisited) {
@@ -37,15 +41,17 @@ const ContactDistributor = () => {
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
-    setLoadingCsv(true);
-    Papa.parse(file, {
-      header: true,
-      complete: (results) => {
-        setCsvData(results.data);
-        setCsvUploaded(true);
-        setLoadingCsv(false);
-      },
-    });
+    if (file) {
+      setLoadingCsv(true);
+      Papa.parse(file, {
+        header: true,
+        complete: (results) => {
+          setCsvData(results.data);
+          setCsvUploaded(true);
+          setLoadingCsv(false);
+        },
+      });
+    }
   };
 
   const handleDistribution = async () => {
@@ -55,9 +61,20 @@ const ContactDistributor = () => {
     }
 
     const userIDArray = userIDs.split(',').map(id => id.trim());
-    let index = 0;
     setLoading(true);
     setInterrupted(false);
+    setLogs([]);
+    setProcessedCount(0);
+    setEstimatedTime(null);
+    setAvgRequestTime(0);
+    setSuccessCount(0);
+    setErrorCount(0);
+    setResultData([]);
+
+    const results = [];
+    const totalContacts = csvData.length;
+    let totalTime = 0;
+    let requestCount = 0;
 
     for (const row of csvData) {
       if (interrupted) {
@@ -67,29 +84,109 @@ const ContactDistributor = () => {
 
       const contatoID = row.contactsID;
       const url = `${process.env.REACT_APP_API_HOST}/api/v1/customers/${customerID}/contacts/redirect/contacts/${contatoID}`;
-      const userID = userIDArray[index % userIDArray.length];
+      const userID = userIDArray[requestCount % userIDArray.length];
+
+      const startTime = performance.now();
 
       try {
         const response = await axios.post(url, { user_id: userID }, { headers: { Authorization: `Bearer ${token}` } });
         const responseDataWithoutSomeKey = extractFieldsFromResponse(response.data);
-        setLogs(prevLogs => [...prevLogs, `Requisição para ${contatoID} feita com sucesso! Resposta: ${JSON.stringify(responseDataWithoutSomeKey)}`]);
-      } catch (error) {
-        setLogs(prevLogs => [...prevLogs, `Erro na requisição para ${contatoID}: ${error.message}`]);
-      }
+        const endTime = performance.now();
+        const requestTime = (endTime - startTime) / 1000;
+        totalTime += requestTime;
+        requestCount += 1;
 
-      index++;
+        const newAvgTime = totalTime / requestCount;
+        setAvgRequestTime(newAvgTime);
+        setProcessedCount(prevCount => prevCount + 1);
+        const remainingContacts = totalContacts - requestCount;
+        const estimatedSeconds = remainingContacts * newAvgTime;
+        setEstimatedTime(estimatedSeconds);
+
+        setSuccessCount(prevCount => prevCount + 1);
+        results.push({
+          contactID: contatoID,
+          userID: userID,
+          status: 'Sucesso',
+          response: JSON.stringify(responseDataWithoutSomeKey),
+        });
+        setLogs(prevLogs => [...prevLogs, `Contato ${contatoID} distribuído com sucesso para ${userID}!`]);
+      } catch (error) {
+        const endTime = performance.now();
+        const requestTime = (endTime - startTime) / 1000;
+        totalTime += requestTime;
+        requestCount += 1;
+
+        setAvgRequestTime(totalTime / requestCount);
+        setProcessedCount(prevCount => prevCount + 1);
+        const remainingContacts = totalContacts - requestCount;
+        const estimatedSeconds = remainingContacts * (totalTime / requestCount);
+        setEstimatedTime(estimatedSeconds);
+
+        setErrorCount(prevCount => prevCount + 1);
+        results.push({
+          contactID: contatoID,
+          userID: userID,
+          status: 'Erro',
+          errorMessage: error.message,
+        });
+        setLogs(prevLogs => [...prevLogs, `Erro ao distribuir ${contatoID}: ${error.message}`]);
+      }
     }
 
+    setResultData(results);
     setLoading(false);
+  };
+
+  const formatEstimatedTime = (seconds) => {
+    if (!seconds || seconds <= 0) return 'Calculando...';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes} min ${remainingSeconds} seg`;
   };
 
   const handleInterrupt = () => {
     setInterrupted(true);
     setLoading(false);
     setLogs(prevLogs => [...prevLogs, 'Processo de distribuição interrompido.']);
+    if (resultData.length > 0) {
+      const csv = Papa.unparse({
+        fields: ['contactID', 'userID', 'status', 'response', 'errorMessage'],
+        data: resultData,
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'resultados_distribuicao_parciais.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
     setTimeout(() => {
       window.location.reload();
     }, 500);
+  };
+
+  const handleDownloadResults = () => {
+    if (resultData.length === 0) {
+      alert('Nenhum resultado disponível para download.');
+      return;
+    }
+
+    const csv = Papa.unparse({
+      fields: ['contactID', 'userID', 'status', 'response', 'errorMessage'],
+      data: resultData,
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'resultados_distribuicao.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const extractFieldsFromResponse = (data) => {
@@ -97,7 +194,7 @@ const ContactDistributor = () => {
       customer_id: data.customer_id,
       channel_id: data.channel_id,
       contact_id: data.contact_id,
-      origin_id: data.origin_id
+      origin_id: data.origin_id,
     };
   };
 
@@ -110,7 +207,7 @@ const ContactDistributor = () => {
       sx={{
         width: '100%',
         minHeight: '100vh',
-        p: 4,
+        p: { xs: 2, sm: 4 },
         backgroundColor: '#fff',
         display: 'flex',
         flexDirection: 'column',
@@ -125,16 +222,17 @@ const ContactDistributor = () => {
           color: '#1CB0F6',
           textAlign: 'left',
           mb: 2,
+          fontSize: { xs: '1.5rem', sm: '2.125rem' },
         }}
       >
-        Distribuição de Contatos
+        Distribuição de Contatos 🚀
       </Typography>
 
       {/* Seção de Inputs */}
       <Paper
         elevation={3}
         sx={{
-          p: 4,
+          p: { xs: 2, sm: 4 },
           borderRadius: '20px',
           backgroundColor: '#fff',
           border: '2px solid #58CC02',
@@ -144,7 +242,7 @@ const ContactDistributor = () => {
         <Stack spacing={3}>
           <TextField
             fullWidth
-            label="Token"
+            label="Token Secreto"
             variant="outlined"
             type={showToken ? 'text' : 'password'}
             value={token}
@@ -166,7 +264,7 @@ const ContactDistributor = () => {
           />
           <TextField
             fullWidth
-            label="Customer ID"
+            label="ID do Cliente"
             variant="outlined"
             value={customerID}
             onChange={(e) => setCustomerID(e.target.value)}
@@ -174,7 +272,7 @@ const ContactDistributor = () => {
           />
           <TextField
             fullWidth
-            label="User IDs (separados por vírgula)"
+            label="IDs dos Usuários (separados por vírgula)"
             variant="outlined"
             value={userIDs}
             onChange={(e) => setUserIDs(e.target.value)}
@@ -183,15 +281,15 @@ const ContactDistributor = () => {
 
           {/* Link do modelo */}
           <Link
-            href="https://docs.google.com/spreadsheets/d/19FzZcDX1ZtU9w80wNhlI4PTuBzOvXwTMZk4UtzeyyaY/edit?usp=sharingg"
+            href="https://docs.google.com/spreadsheets/d/19FzZcDX1ZtU9w80wNhlI4PTuBzOvXwTMZk4UtzeyyaY/edit?usp=sharing"
             target="_blank"
-            sx={{ color: '#1CB0F6', fontWeight: 'bold' }}
+            sx={{ color: '#1CB0F6', fontWeight: 'bold', wordBreak: 'break-word' }}
           >
-            Ver modelo de planilha
+            Pegue o modelo da planilha aqui! 📝
           </Link>
 
           {/* Upload CSV */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <Button
               variant="contained"
               component="label"
@@ -204,26 +302,49 @@ const ContactDistributor = () => {
                 '&:hover': { backgroundColor: '#e55a00' },
               }}
             >
-              Upload CSV
+              {csvUploaded ? 'Trocar CSV' : 'Subir CSV'}
               <input
                 type="file"
                 accept=".csv"
                 hidden
                 onChange={handleFileUpload}
+                key={csvUploaded ? 'csv-upload-new' : 'csv-upload'}
               />
             </Button>
             {csvUploaded && !loadingCsv && (
-              <Chip
-                icon={<CheckCircle />}
-                label="CSV Carregado!"
-                color="success"
-                sx={{ borderRadius: '16px' }}
-              />
+              <>
+                <Chip
+                  icon={<CheckCircle />}
+                  label="CSV Pronto!"
+                  color="success"
+                  sx={{ borderRadius: '16px' }}
+                />
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => {
+                    setCsvData(null);
+                    setCsvUploaded(false);
+                    setLogs([]);
+                    setSuccessCount(0);
+                    setErrorCount(0);
+                    setResultData([]);
+                    setProcessedCount(0);
+                    setEstimatedTime(null);
+                  }}
+                  sx={{
+                    borderRadius: '25px',
+                    padding: '10px 20px',
+                  }}
+                >
+                  Limpar CSV
+                </Button>
+              </>
             )}
           </Box>
 
           {/* Botões de Ação */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <Button
               variant="contained"
               onClick={handleDistribution}
@@ -237,7 +358,7 @@ const ContactDistributor = () => {
                 '&:hover': { backgroundColor: '#4ab002' },
               }}
             >
-              Iniciar Distribuição
+              Iniciar Missão! 🎉
             </Button>
             <Button
               variant="contained"
@@ -252,31 +373,167 @@ const ContactDistributor = () => {
                 '&:hover': { backgroundColor: '#d40000' },
               }}
             >
-              Interromper
+              Parar Missão
             </Button>
           </Box>
         </Stack>
+      </Paper>
+
+      {/* Seção de Resumo */}
+      <Paper
+        elevation={3}
+        sx={{
+          p: { xs: 2, sm: 4 },
+          borderRadius: '20px',
+          backgroundColor: '#fff',
+          border: '2px solid #1CB0F6',
+          width: '100%',
+          overflow: 'hidden',
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 'bold',
+            color: '#1CB0F6',
+            mb: 2,
+            fontSize: { xs: '1.25rem', sm: '1.5rem' },
+            textAlign: 'center',
+          }}
+        >
+          Seu Progresso ⭐
+        </Typography>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          justifyContent="space-around"
+          alignItems="center"
+          divider={<Divider orientation={{ xs: 'horizontal', sm: 'vertical' }} flexItem />}
+        >
+          <Box textAlign="center">
+            <Typography variant="h5" sx={{ color: '#58CC02', fontWeight: 'bold' }}>
+              {successCount}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#777' }}>
+              Vitórias
+            </Typography>
+          </Box>
+          <Box textAlign="center">
+            <Typography variant="h5" sx={{ color: '#FF0000', fontWeight: 'bold' }}>
+              {errorCount}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#777' }}>
+              Desafios
+            </Typography>
+          </Box>
+        </Stack>
+
+        {/* Progresso e estimativa */}
+        {loading && csvData && (
+          <Box
+            sx={{
+              mt: 2,
+              textAlign: 'center',
+              maxWidth: '100%',
+              wordWrap: 'break-word',
+            }}
+          >
+            <Typography
+              variant="body1"
+              sx={{
+                color: '#1CB0F6',
+                fontWeight: 'bold',
+                fontSize: { xs: '0.9rem', sm: '1rem' },
+              }}
+            >
+              Missão: {processedCount} / {csvData.length} contatos
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: '#777',
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                mt: 1,
+              }}
+            >
+              Tempo para a vitória: {formatEstimatedTime(estimatedTime)}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: '#58CC02',
+                mt: 1,
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+              }}
+            >
+              {processedCount === csvData.length / 2
+                ? "Metade do caminho! Você está arrasando! 💪"
+                : "Continue assim, você vai dominar essa lista! 🔥"}
+            </Typography>
+          </Box>
+        )}
       </Paper>
 
       {/* Seção de Logs */}
       <Paper
         elevation={3}
         sx={{
-          p: 4,
+          p: { xs: 2, sm: 4 },
           borderRadius: '20px',
           backgroundColor: '#fff',
           border: '2px solid #FF6200',
           width: '100%',
           maxHeight: '400px',
-          overflow: 'auto',
+          overflowX: 'auto',
+          overflowY: 'auto',
+          whiteSpace: { xs: 'normal', sm: 'nowrap' },
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#FF6200', mb: 2 }}>
-          Logs
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 2,
+            flexWrap: 'wrap',
+            gap: 1,
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 'bold',
+              color: '#FF6200',
+              fontSize: { xs: '1.25rem', sm: '1.5rem' },
+            }}
+          >
+            Diário da Missão 📜
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<Download />}
+            onClick={handleDownloadResults}
+            disabled={resultData.length === 0 || loading}
+            sx={{
+              borderColor: '#FF6200',
+              color: '#FF6200',
+              borderRadius: '25px',
+              '&:hover': { borderColor: '#e55a00', color: '#e55a00' },
+            }}
+          >
+            Baixar Relatório
+          </Button>
+        </Box>
         {logs.length === 0 ? (
-          <Typography variant="body2" sx={{ color: '#777', textAlign: 'center' }}>
-            Nenhum log disponível ainda.
+          <Typography
+            variant="body2"
+            sx={{
+              color: '#777',
+              textAlign: 'center',
+              fontSize: { xs: '0.8rem', sm: '0.875rem' },
+            }}
+          >
+            Nenhum registro ainda. Vamos começar a aventura? 🌟
           </Typography>
         ) : (
           logs.map((log, index) => (
@@ -286,6 +543,8 @@ const ContactDistributor = () => {
               sx={{
                 color: log.includes('Erro') ? '#FF0000' : '#58CC02',
                 mb: 1,
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                wordWrap: 'break-word',
               }}
             >
               {log}

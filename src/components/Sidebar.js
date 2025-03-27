@@ -2,8 +2,8 @@ import React from 'react';
 import {
   Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Box
 } from '@mui/material';
-import { Contacts, Assignment } from '@mui/icons-material';
-import { styled, useTheme } from '@mui/material/styles';
+import { Contacts, Assignment, Phone } from '@mui/icons-material'; // Adicionei o Phone
+import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 
 const drawerWidth = 240;
@@ -82,11 +82,13 @@ const Sidebar = ({ selectedPage }) => {
               primaryTypographyProps={{ fontWeight: 'bold' }}
             />
           </ListItem>
+
           <ListItem
             button
             onClick={() => navigate('/register-contacts')}
             sx={{
               borderRadius: '15px',
+              mb: 1,
               '&:hover': {
                 backgroundColor: '#58CC02',
                 color: '#fff',
@@ -110,6 +112,39 @@ const Sidebar = ({ selectedPage }) => {
             </ListItemIcon>
             <ListItemText
               primary="Cadastrar Contatos"
+              primaryTypographyProps={{ fontWeight: 'bold' }}
+            />
+          </ListItem>
+
+          <ListItem
+            button
+            onClick={() => navigate('/phone-formatter')}
+            sx={{
+              borderRadius: '15px',
+              mb: 1,
+              '&:hover': {
+                backgroundColor: '#1CB0F6', // Azul do header para consistência
+                color: '#fff',
+                '& .MuiListItemIcon-root': { color: '#fff' },
+              },
+              ...(selectedPage === 'formatter' && {
+                boxShadow: '0px 4px 12px rgba(28, 176, 246, 0.5)',
+                backgroundColor: '#1CB0F6',
+                color: '#fff',
+                '& .MuiListItemIcon-root': { color: '#fff' },
+              }),
+              ...(selectedPage !== 'formatter' && {
+                backgroundColor: 'transparent',
+                color: '#000',
+                '& .MuiListItemIcon-root': { color: '#1CB0F6' },
+              }),
+            }}
+          >
+            <ListItemIcon sx={{ color: selectedPage === 'formatter' ? '#fff' : '#1CB0F6' }}>
+              <Phone />
+            </ListItemIcon>
+            <ListItemText
+              primary="Formatar Telefones"
               primaryTypographyProps={{ fontWeight: 'bold' }}
             />
           </ListItem>

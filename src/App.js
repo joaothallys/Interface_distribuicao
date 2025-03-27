@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Box, CssBaseline } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify'; // Importar o ToastContainer
-import 'react-toastify/dist/ReactToastify.css'; // Importar os estilos do react-toastify
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from './components/Sidebar';
 import ContactDistributor from './components/ContactDistributor';
 import RegisterContacts from './components/RegisterContacts';
 import Login from './components/Login';
+import PhoneFormatter from './components/PhoneFormatter';
 
 const drawerWidth = 240;
 
@@ -30,6 +31,7 @@ function AppContent() {
   useEffect(() => {
     if (location.pathname === '/contact-distributor') setSelectedPage('distribute');
     else if (location.pathname === '/register-contacts') setSelectedPage('register');
+    else if (location.pathname === '/phone-formatter') setSelectedPage('formatter'); // Novo valor para a tela
   }, [location]);
 
   // Sincroniza o estado com o localStorage
@@ -54,6 +56,7 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/register-contacts" element={isAuthenticated ? <RegisterContacts /> : <Navigate to="/login" />} />
           <Route path="/contact-distributor" element={isAuthenticated ? <ContactDistributor /> : <Navigate to="/login" />} />
+          <Route path="/phone-formatter" element={isAuthenticated ? <PhoneFormatter /> : <Navigate to="/login" />} /> {/* Nova rota */}
         </Routes>
       </Main>
     </Box>
@@ -64,8 +67,8 @@ function App() {
   return (
     <Router>
       <ToastContainer
-        position="top-right" // Posição do popup
-        autoClose={4000} // Fecha automaticamente após 3 segundos
+        position="top-right"
+        autoClose={4000}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick

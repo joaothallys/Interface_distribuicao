@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography, TextField, Button, Paper, Stack, Alert } from '@mui/material';
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
-import * as XLSX from 'xlsx';
 import { toast } from 'react-toastify';
+import * as XLSX from 'xlsx';
 
 const PhoneFormatter = () => {
     const [ddi, setDdi] = useState('55'); // Padrão Brasil
@@ -28,38 +27,52 @@ const PhoneFormatter = () => {
         reader.readAsArrayBuffer(uploadedFile);
     };
 
-    const normalizePhoneNumber = (input, userDdi, userDdd) => {
-        // Remove todos os caracteres não numéricos
-        let rawNumber = String(input || '').replace(/\D/g, '');
+    const normalizePhoneNumberOnly = (input, ddi, ddd) => {
+        if (!input || String(input).trim() === '') return null;
 
-        // Remove DDIs duplicados (ex.: 5555 -> 55)
-        while (rawNumber.startsWith(userDdi + userDdi)) {
-            rawNumber = rawNumber.slice(userDdi.length);
+        ddi = String(ddi).padStart(2, '0');
+        ddd = String(ddd).padStart(2, '0');
+        
+        let rawNumber = String(input).replace(/\D/g, '');
+        if (rawNumber.length < 8) return null;
+
+        // Case 1: Number already starts with DDI
+        if (rawNumber.startsWith(ddi)) {
+            let numberAfterDdi = rawNumber.slice(ddi.length);
+            const hasDdd = numberAfterDdi.length >= 2 && /^\d{2}$/.test(numberAfterDdi.slice(0, 2));
+            
+            if (hasDdd) {
+                let phonePart = numberAfterDdi.slice(2);
+                if (phonePart.length === 8) {
+                    phonePart = '9' + phonePart;
+                } else if (phonePart.length < 8 || phonePart.length > 9) {
+                    return null;
+                }
+                return ddi + numberAfterDdi.slice(0, 2) + phonePart;
+            }
         }
 
-        // Adiciona DDI se ausente
-        if (!rawNumber.startsWith(userDdi)) {
-            rawNumber = userDdi + rawNumber;
+        // Case 2: Number starts with a DDD (10 or 11 digits total)
+        if (rawNumber.length === 10 || rawNumber.length === 11) {
+            const potentialDdd = rawNumber.slice(0, 2);
+            const phonePart = rawNumber.slice(2);
+            if (/^\d{2}$/.test(potentialDdd) && (phonePart.length === 8 || phonePart.length === 9)) {
+                if (phonePart.length === 8) {
+                    return ddi + potentialDdd + '9' + phonePart;
+                }
+                return ddi + potentialDdd + phonePart; // e.g., 11953807512 → 5511953807512
+            }
         }
 
-        // Verifica se tem DDD (2 dígitos após o DDI)
-        const hasDdd = rawNumber.length >= (userDdi.length + 2) &&
-            /^\d{2}$/.test(rawNumber.slice(userDdi.length, userDdi.length + 2));
-        if (!hasDdd) {
-            rawNumber = userDdi + userDdd + rawNumber.slice(userDdi.length); // Adiciona DDD do usuário se não tiver
+        // Case 3: Number is just the phone part (8 or 9 digits)
+        let phonePart = rawNumber;
+        if (phonePart.length === 8) {
+            phonePart = '9' + phonePart;
+        } else if (phonePart.length < 8 || phonePart.length > 9) {
+            return null;
         }
 
-        // Adiciona o dígito 9 para números móveis brasileiros (se não tiver e tiver 12 dígitos)
-        if (rawNumber.length === (userDdi.length + 10) && rawNumber.charAt(userDdi.length + 2) !== '9') {
-            rawNumber = rawNumber.slice(0, userDdi.length + 2) + '9' + rawNumber.slice(userDdi.length + 2);
-        }
-
-        // Validação com libphonenumber-js
-        const phoneNumber = parsePhoneNumberFromString(rawNumber, 'BR');
-        const isValid = phoneNumber && phoneNumber.isValid();
-
-        // Retorna o número bruto se válido, ou "Número inválido"
-        return isValid ? rawNumber : 'Número inválido';
+        return ddi + ddd + phonePart;
     };
 
     const handleFormat = () => {
@@ -85,13 +98,11 @@ const PhoneFormatter = () => {
         }
 
         const formattedData = file.map((row) => {
-            const formatted = normalizePhoneNumber(row.celular, ddi, ddd);
-            const isValid = formatted !== 'Número inválido';
-
+            const formatted = normalizePhoneNumberOnly(row.Celular, ddi, ddd);
             return {
                 ...row,
-                celular_formatado: formatted,
-                valido: isValid ? 'Sim' : 'Não',
+                celular_formatado: formatted || 'Número inválido',
+                formatado: formatted ? 'Sim' : 'Não',
             };
         });
 

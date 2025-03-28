@@ -82,7 +82,7 @@ const ContactDistributor = () => {
         break;
       }
 
-      const contatoID = row.contactsID;
+      const contatoID = row.contactID;
       const url = `${process.env.REACT_APP_API_HOST}/api/v1/customers/${customerID}/contacts/redirect/contacts/${contatoID}`;
       const userID = userIDArray[requestCount % userIDArray.length];
 
@@ -281,7 +281,7 @@ const ContactDistributor = () => {
 
           {/* Link do modelo */}
           <Link
-            href="https://docs.google.com/spreadsheets/d/19FzZcDX1ZtU9w80wNhlI4PTuBzOvXwTMZk4UtzeyyaY/edit?usp=sharing"
+            href="https://docs.google.com/spreadsheets/d/19FzZcDX1ZtU9w80wNhlI4PTuBzOvXwTMZk4UtzeyyaY/copy"
             target="_blank"
             sx={{ color: '#1CB0F6', fontWeight: 'bold', wordBreak: 'break-word' }}
           >

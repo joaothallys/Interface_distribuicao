@@ -298,7 +298,7 @@ const RegisterContacts = () => {
 
           {/* Link do modelo */}
           <Link
-            href="https://docs.google.com/spreadsheets/d/1172gOd-Pz8S7Sqml2tO_p_ZSZE1RSs5GMj_PP1yOlj8/edit?usp=sharing"
+            href="https://docs.google.com/spreadsheets/d/1172gOd-Pz8S7Sqml2tO_p_ZSZE1RSs5GMj_PP1yOlj8/copy"
             target="_blank"
             sx={{ color: '#1CB0F6', fontWeight: 'bold', wordBreak: 'break-word' }}
           >

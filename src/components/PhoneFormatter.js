@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import * as XLSX from 'xlsx';
 
 const PhoneFormatter = () => {
-    const [ddi, setDdi] = useState('55'); // Padrão Brasil
+    const [ddi, setDdi] = useState('55');
     const [ddd, setDdd] = useState('');
     const [file, setFile] = useState(null);
     const [processedData, setProcessedData] = useState(null);

@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Box
 } from '@mui/material';
-import { Contacts, Assignment, Phone } from '@mui/icons-material'; // Adicionei o Phone
+import { Contacts, Assignment, Phone, ExitToApp } from '@mui/icons-material'; // Adicionei ExitToApp
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,6 +26,8 @@ const StyledDrawer = styled(Drawer)(({ theme }) => ({
     backgroundColor: '#fff',
     borderRight: '2px solid #58CC02',
     borderRadius: '0 20px 20px 0',
+    display: 'flex', // Adicionado para layout flex
+    flexDirection: 'column', // Adicionado para empilhar verticalmente
   },
 }));
 
@@ -48,7 +50,7 @@ const Sidebar = ({ selectedPage }) => {
         </Box>
       </DrawerHeader>
 
-      <Box sx={{ p: 1 }}>
+      <Box sx={{ p: 1, flexGrow: 1 }}> {/* flexGrow: 1 empurra o logout para baixo */}
         <List>
           <ListItem
             button
@@ -123,7 +125,7 @@ const Sidebar = ({ selectedPage }) => {
               borderRadius: '15px',
               mb: 1,
               '&:hover': {
-                backgroundColor: '#1CB0F6', // Azul do header para consistência
+                backgroundColor: '#1CB0F6',
                 color: '#fff',
                 '& .MuiListItemIcon-root': { color: '#fff' },
               },
@@ -145,6 +147,37 @@ const Sidebar = ({ selectedPage }) => {
             </ListItemIcon>
             <ListItemText
               primary="Formatar Telefones"
+              primaryTypographyProps={{ fontWeight: 'bold' }}
+            />
+          </ListItem>
+        </List>
+      </Box>
+
+      {/* Botão de Sair */}
+      <Box sx={{ p: 1 }}>
+        <List>
+          <ListItem
+            button
+            onClick={() => {
+              window.location.href = '/login';
+            }}
+            sx={{
+              borderRadius: '15px',
+              '&:hover': {
+                backgroundColor: '#FF0000',
+                color: '#fff',
+                '& .MuiListItemIcon-root': { color: '#fff' },
+              },
+              backgroundColor: 'transparent',
+              color: '#000',
+              '& .MuiListItemIcon-root': { color: '#FF0000' },
+            }}
+          >
+            <ListItemIcon sx={{ color: '#FF0000' }}>
+              <ExitToApp />
+            </ListItemIcon>
+            <ListItemText
+              primary="Sair"
               primaryTypographyProps={{ fontWeight: 'bold' }}
             />
           </ListItem>

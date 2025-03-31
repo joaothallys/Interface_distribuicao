@@ -19,12 +19,12 @@ const ContactDistributor = () => {
   const [loadingCsv, setLoadingCsv] = useState(false);
   const [showToken, setShowToken] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const [processedCount, setProcessedCount] = useState(0);
-  const [estimatedTime, setEstimatedTime] = useState(null);
-  const [avgRequestTime, setAvgRequestTime] = useState(0);
-  const [successCount, setSuccessCount] = useState(0);
-  const [errorCount, setErrorCount] = useState(0);
-  const [resultData, setResultData] = useState([]);
+  const [processedCount, setProcessedCount] = useState(0); // Novo: contatos processados
+  const [estimatedTime, setEstimatedTime] = useState(null); // Novo: tempo estimado restante
+  const [avgRequestTime, setAvgRequestTime] = useState(0); // Novo: tempo médio por requisição
+  const [successCount, setSuccessCount] = useState(0); // Novo: contagem de sucessos
+  const [errorCount, setErrorCount] = useState(0); // Novo: contagem de erros
+  const [resultData, setResultData] = useState([]); // Novo: dados para download
 
   useEffect(() => {
     localStorage.setItem('token', token);
@@ -37,62 +37,6 @@ const ContactDistributor = () => {
       setShowPopup(true);
       localStorage.setItem('hasVisited', 'true');
     }
-  }, []);
-
-  // Carregar o anúncio do Google AdSense dinamicamente
-  useEffect(() => {
-    console.log('Iniciando carregamento do AdSense...');
-
-    const script = document.createElement('script');
-    script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8615891643411344';
-    script.async = true;
-    script.crossOrigin = 'anonymous';
-    script.onerror = (e) => console.error('Erro ao carregar o script do AdSense:', e);
-
-    const ins = document.createElement('ins');
-    ins.className = 'adsbygoogle';
-    ins.style.display = 'block';
-    ins.setAttribute('data-ad-client', 'ca-pub-8615891643411344');
-    ins.setAttribute('data-ad-slot', '1870885792');
-    ins.setAttribute('data-ad-format', 'auto');
-    ins.setAttribute('data-full-width-responsive', 'true');
-
-    const adContainer = document.getElementById('ad-container');
-    if (adContainer) {
-      adContainer.appendChild(ins);
-      console.log('Elemento <ins> adicionado ao container');
-
-      script.onload = () => {
-        console.log('Script do AdSense carregado com sucesso');
-        if (!ins.getAttribute('data-adsbygoogle-status')) {
-          requestAnimationFrame(() => {
-            const pushScript = document.createElement('script');
-            pushScript.innerHTML = "(adsbygoogle = window.adsbygoogle || []).push({});";
-            document.head.appendChild(pushScript);
-            console.log('Push do AdSense executado após script carregado');
-          });
-        } else {
-          console.log('Anúncio já inicializado, ignorando push');
-        }
-      };
-    } else {
-      console.error('Container de anúncio não encontrado');
-    }
-
-    document.head.appendChild(script);
-
-    return () => {
-      if (adContainer && ins.parentNode) {
-        adContainer.removeChild(ins);
-        console.log('Elemento <ins> removido');
-      }
-      document.head.removeChild(script);
-      const pushScript = document.querySelector('script[src="adsbygoogle.js"] + script');
-      if (pushScript && pushScript.parentNode) {
-        pushScript.parentNode.removeChild(pushScript);
-      }
-      console.log('Scripts removidos');
-    };
   }, []);
 
   const handleFileUpload = (event) => {
@@ -270,21 +214,6 @@ const ContactDistributor = () => {
         gap: 4,
       }}
     >
-      {/* Container para o anúncio */}
-      <Box
-        id="ad-container"
-        sx={{
-          width: '100%',
-          maxWidth: '728px', // Largura máxima de um banner comum
-          minWidth: '300px', // Largura mínima garantida
-          minHeight: '90px', // Altura mínima garantida
-          display: 'block', // Mudar para block para evitar problemas com flex
-          marginBottom: 2,
-          backgroundColor: '#f0f0f0', // Para debug visual
-          visibility: 'visible', // Garante visibilidade
-        }}
-      />
-
       {/* Cabeçalho */}
       <Typography
         variant="h4"

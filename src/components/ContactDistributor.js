@@ -41,10 +41,14 @@ const ContactDistributor = () => {
 
   // Carregar o anúncio do Google AdSense dinamicamente
   useEffect(() => {
+    console.log('Iniciando carregamento do AdSense...');
+
     const script = document.createElement('script');
     script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8615891643411344';
     script.async = true;
     script.crossOrigin = 'anonymous';
+    script.onload = () => console.log('Script do AdSense carregado com sucesso');
+    script.onerror = (e) => console.error('Erro ao carregar o script do AdSense:', e);
     document.head.appendChild(script);
 
     const ins = document.createElement('ins');
@@ -58,18 +62,34 @@ const ContactDistributor = () => {
     const adContainer = document.getElementById('ad-container');
     if (adContainer) {
       adContainer.appendChild(ins);
-    }
+      console.log('Elemento <ins> adicionado ao container');
 
-    const pushScript = document.createElement('script');
-    pushScript.innerHTML = "(adsbygoogle = window.adsbygoogle || []).push({});";
-    document.head.appendChild(pushScript);
+      // Verificar se o elemento já foi inicializado
+      if (!ins.getAttribute('data-adsbygoogle-status')) {
+        setTimeout(() => {
+          const pushScript = document.createElement('script');
+          pushScript.innerHTML = "(adsbygoogle = window.adsbygoogle || []).push({});";
+          document.head.appendChild(pushScript);
+          console.log('Push do AdSense executado');
+        }, 500);
+      } else {
+        console.log('Anúncio já inicializado, ignorando push');
+      }
+    } else {
+      console.error('Container de anúncio não encontrado');
+    }
 
     return () => {
       if (adContainer && ins.parentNode) {
         adContainer.removeChild(ins);
+        console.log('Elemento <ins> removido');
       }
       document.head.removeChild(script);
-      document.head.removeChild(pushScript);
+      const pushScript = document.querySelector('script[src="adsbygoogle.js"] + script');
+      if (pushScript && pushScript.parentNode) {
+        pushScript.parentNode.removeChild(pushScript);
+      }
+      console.log('Scripts removidos');
     };
   }, []);
 
@@ -256,6 +276,8 @@ const ContactDistributor = () => {
           display: 'flex',
           justifyContent: 'center',
           mb: 2,
+          minWidth: '300px', // Largura mínima para evitar availableWidth=0
+          minHeight: '90px', // Altura mínima para o slot
         }}
       />
 

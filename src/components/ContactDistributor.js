@@ -64,14 +64,13 @@ const ContactDistributor = () => {
       adContainer.appendChild(ins);
       console.log('Elemento <ins> adicionado ao container');
 
-      // Verificar se o elemento já foi inicializado
       if (!ins.getAttribute('data-adsbygoogle-status')) {
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           const pushScript = document.createElement('script');
           pushScript.innerHTML = "(adsbygoogle = window.adsbygoogle || []).push({});";
           document.head.appendChild(pushScript);
-          console.log('Push do AdSense executado');
-        }, 500);
+          console.log('Push do AdSense executado após requestAnimationFrame');
+        });
       } else {
         console.log('Anúncio já inicializado, ignorando push');
       }
@@ -273,11 +272,13 @@ const ContactDistributor = () => {
         id="ad-container"
         sx={{
           width: '100%',
+          maxWidth: '728px', // Largura máxima típica de um banner
+          minWidth: '300px', // Largura mínima
+          minHeight: '90px', // Altura mínima
           display: 'flex',
           justifyContent: 'center',
           mb: 2,
-          minWidth: '300px', // Largura mínima para evitar availableWidth=0
-          minHeight: '90px', // Altura mínima para o slot
+          backgroundColor: '#f0f0f0', // Para debug visual
         }}
       />
 

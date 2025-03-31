@@ -47,9 +47,7 @@ const ContactDistributor = () => {
     script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8615891643411344';
     script.async = true;
     script.crossOrigin = 'anonymous';
-    script.onload = () => console.log('Script do AdSense carregado com sucesso');
     script.onerror = (e) => console.error('Erro ao carregar o script do AdSense:', e);
-    document.head.appendChild(script);
 
     const ins = document.createElement('ins');
     ins.className = 'adsbygoogle';
@@ -64,19 +62,24 @@ const ContactDistributor = () => {
       adContainer.appendChild(ins);
       console.log('Elemento <ins> adicionado ao container');
 
-      if (!ins.getAttribute('data-adsbygoogle-status')) {
-        requestAnimationFrame(() => {
-          const pushScript = document.createElement('script');
-          pushScript.innerHTML = "(adsbygoogle = window.adsbygoogle || []).push({});";
-          document.head.appendChild(pushScript);
-          console.log('Push do AdSense executado após requestAnimationFrame');
-        });
-      } else {
-        console.log('Anúncio já inicializado, ignorando push');
-      }
+      script.onload = () => {
+        console.log('Script do AdSense carregado com sucesso');
+        if (!ins.getAttribute('data-adsbygoogle-status')) {
+          requestAnimationFrame(() => {
+            const pushScript = document.createElement('script');
+            pushScript.innerHTML = "(adsbygoogle = window.adsbygoogle || []).push({});";
+            document.head.appendChild(pushScript);
+            console.log('Push do AdSense executado após script carregado');
+          });
+        } else {
+          console.log('Anúncio já inicializado, ignorando push');
+        }
+      };
     } else {
       console.error('Container de anúncio não encontrado');
     }
+
+    document.head.appendChild(script);
 
     return () => {
       if (adContainer && ins.parentNode) {
@@ -272,13 +275,13 @@ const ContactDistributor = () => {
         id="ad-container"
         sx={{
           width: '100%',
-          maxWidth: '728px', // Largura máxima típica de um banner
-          minWidth: '300px', // Largura mínima
-          minHeight: '90px', // Altura mínima
-          display: 'flex',
-          justifyContent: 'center',
-          mb: 2,
+          maxWidth: '728px', // Largura máxima de um banner comum
+          minWidth: '300px', // Largura mínima garantida
+          minHeight: '90px', // Altura mínima garantida
+          display: 'block', // Mudar para block para evitar problemas com flex
+          marginBottom: 2,
           backgroundColor: '#f0f0f0', // Para debug visual
+          visibility: 'visible', // Garante visibilidade
         }}
       />
 

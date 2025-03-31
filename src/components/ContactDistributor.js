@@ -214,6 +214,34 @@ const ContactDistributor = () => {
         gap: 4,
       }}
     >
+      <Box
+        sx={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          mb: 2,
+        }}
+      >
+        <div>
+          <script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8615891643411344"
+            crossorigin="anonymous"
+          ></script>
+          <ins
+            className="adsbygoogle"
+            style={{ display: 'block' }}
+            data-ad-client="ca-pub-8615891643411344"
+            data-ad-slot="1870885792"
+            data-ad-format="auto"
+            data-full-width-responsive="true"
+          ></ins>
+          <script>
+            (adsbygoogle = window.adsbygoogle || []).push({ });
+          </script>
+        </div>
+      </Box>
+
       {/* Cabeçalho */}
       <Typography
         variant="h4"

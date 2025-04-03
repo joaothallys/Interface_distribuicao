@@ -73,7 +73,7 @@ const RegisterContacts = () => {
         break;
       }
 
-      const phoneWithDDD = addDDD && row.phone ? `55${row.phone}` : row.phone || '';
+      const phoneWithDDD = addDDD && row.phone? row.phone.startsWith('55')? row.phone: `55${row.phone}`: row.phone || '';
       const url = `${process.env.REACT_APP_API_HOST}/api/v1/customers/${customerID}/contacts`;
       const startTime = performance.now();
 
@@ -105,27 +105,16 @@ const RegisterContacts = () => {
 
         if (response.status === 200 || response.status === 201) {
           if (response.data.message === 'Contato salvo com sucesso.') {
-            if (response.data.data.already_exists) {
-              setExistingCount(prevCount => prevCount + 1);
-              results.push({
-                name: row.name,
-                email: row.email || '',
-                phone: phoneWithDDD,
-                status: 'Ja existente',
-                errorMessage: '',
-              });
-              setLogs(prevLogs => [...prevLogs, `Contato ${row.name} ja existente.`]);
-            } else {
-              setSuccessCount(prevCount => prevCount + 1);
-              results.push({
-                name: row.name,
-                email: row.email || '',
-                phone: phoneWithDDD,
-                status: 'Sucesso',
-                errorMessage: '',
-              });
-              setLogs(prevLogs => [...prevLogs, `Contato ${row.name} cadastrado com sucesso!`]);
-            }
+            setSuccessCount(prevCount => prevCount + 1);
+            results.push({
+              id: response.data.data.id || '', // Captura o ID do contato no sucesso
+              name: row.name,
+              email: row.email || '',
+              phone: phoneWithDDD,
+              status: 'Sucesso',
+              errorMessage: '',
+            });
+            setLogs(prevLogs => [...prevLogs, `Contato ${row.name} cadastrado com sucesso!`]);
           }
         }
       } catch (error) {
@@ -142,19 +131,26 @@ const RegisterContacts = () => {
         setEstimatedTime(estimatedSeconds);
 
         const errorMsg = error.response?.data?.message || error.message || 'Erro na requisição';
-        if (error.response?.status === 403 && errorMsg === 'Contato j\u00e1 existe nessa empresa.') {
+        const contactId =
+          error.response?.data?.contact?.id || // Captura o ID do contato no erro
+          error.response?.data?.data?.id || // Captura o ID do contato no sucesso parcial
+          '';
+
+        if (error.response?.status === 403 && errorMsg === 'Contato já existe nessa empresa.') {
           setExistingCount(prevCount => prevCount + 1);
           results.push({
+            id: contactId, // Captura o ID do contato no caso de já existente
             name: row.name,
             email: row.email || '',
             phone: phoneWithDDD,
-            status: 'Ja existente',
+            status: 'Já existente',
             errorMessage: '',
           });
-          setLogs(prevLogs => [...prevLogs, `Contato ${row.name} ja existente nessa empresa.`]);
+          setLogs(prevLogs => [...prevLogs, `Contato ${row.name} já existente nessa empresa.`]);
         } else {
           setErrorCount(prevCount => prevCount + 1);
           results.push({
+            id: contactId, // Captura o ID do contato no caso de erro
             name: row.name,
             email: row.email || '',
             phone: phoneWithDDD,
@@ -183,7 +179,7 @@ const RegisterContacts = () => {
 
     if (resultData.length > 0) {
       const csv = Papa.unparse({
-        fields: ['name', 'email', 'phone', 'status', 'errorMessage'],
+        fields: ['id', 'name', 'email', 'phone', 'status', 'errorMessage'], // Inclui o campo 'id'
         data: resultData,
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -213,7 +209,7 @@ const RegisterContacts = () => {
     }
 
     const csv = Papa.unparse({
-      fields: ['name', 'email', 'phone', 'status', 'errorMessage'],
+      fields: ['id', 'name', 'email', 'phone', 'status', 'errorMessage'],
       data: resultData,
     });
 

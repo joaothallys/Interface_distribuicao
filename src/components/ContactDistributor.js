@@ -6,6 +6,7 @@ import { CloudUpload, CheckCircle, PlayArrow, Stop, Visibility, VisibilityOff, D
 import axios from 'axios';
 import Papa from 'papaparse';
 import WelcomePopup from './WelcomePopup';
+import ReactAdsense from '@pkasila/react-adsense';
 
 const ContactDistributor = () => {
   const [csvData, setCsvData] = useState(null);
@@ -227,6 +228,14 @@ const ContactDistributor = () => {
       >
         Distribuição de Contatos 🚀
       </Typography>
+
+      <ReactAdsense
+        client="ca-pub-8615891643411344"
+        slot="1870885792"
+        style={{ display: 'block' }}
+        format="auto"
+        responsive="true"
+      />
 
       {/* Seção de Inputs */}
       <Paper
